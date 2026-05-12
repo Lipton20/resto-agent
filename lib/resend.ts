@@ -1,6 +1,12 @@
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY!)
+let _resend: Resend | null = null
+function getResend() {
+  if (!_resend) {
+    _resend = new Resend(process.env.RESEND_API_KEY!)
+  }
+  return _resend
+}
 const FROM_EMAIL = process.env.FROM_EMAIL || 'agent@restoagent.ru'
 
 export async function sendSupplierOrder({
@@ -18,7 +24,7 @@ export async function sendSupplierOrder({
   unit: string
   emailBody: string
 }) {
-  return resend.emails.send({
+  return getResend().emails.send({
     from: FROM_EMAIL,
     to,
     subject: `Заявка на поставку: ${itemName}`,
@@ -51,7 +57,7 @@ export async function sendReservationConfirmation({
   tableNumber: number
 }) {
   if (!guestEmail) return
-  return resend.emails.send({
+  return getResend().emails.send({
     from: FROM_EMAIL,
     to: guestEmail,
     subject: 'Подтверждение бронирования',
