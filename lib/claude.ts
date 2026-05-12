@@ -1,8 +1,13 @@
 import Anthropic from '@anthropic-ai/sdk'
 
-export const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY!,
-})
+let _anthropic: Anthropic | null = null
+
+function getClient() {
+  if (!_anthropic) {
+    _anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
+  }
+  return _anthropic
+}
 
 export const SYSTEM_PROMPT = `Ты — операционный ИИ-агент заведения общепита (кальянный бар).
 Твоя задача — автономно управлять операционными процессами заведения.
@@ -68,7 +73,7 @@ export async function askAgent(
     messages.push({ role: 'user', content: userMessage })
   }
 
-  const response = await anthropic.messages.create({
+  const response = await getClient().messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 1024,
     system: SYSTEM_PROMPT,
