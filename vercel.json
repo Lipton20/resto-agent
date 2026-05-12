@@ -1,0 +1,16 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/shift-report",
+      "schedule": "0 23 * * *"
+    },
+    {
+      "path": "/api/cron/check-inventory",
+      "schedule": "0 */4 * * *"
+    },
+    {
+      "path": "/api/cron/reminders",
+      "schedule": "*/30 * * * *"
+    }
+  ]
+}
