@@ -20,6 +20,7 @@ export async function generateShiftReport(data: {
 
 export async function generateOrderEmail(item: {
   name: string
+  category: string
   current_stock: number
   min_stock: number
   unit: string
