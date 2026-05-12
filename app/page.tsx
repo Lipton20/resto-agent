@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { supabaseAdmin } from '@/lib/supabase'
 import StatCard from '@/components/StatCard'
 import { Calendar, Package, Bell, Users, TrendingUp, AlertTriangle } from 'lucide-react'
