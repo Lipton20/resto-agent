@@ -1,12 +1,12 @@
-import Anthropic from '@anthropic-ai/sdk'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 
-let _anthropic: Anthropic | null = null
+let _genAI: GoogleGenerativeAI | null = null
 
 function getClient() {
-  if (!_anthropic) {
-    _anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
+  if (!_genAI) {
+    _genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
   }
-  return _anthropic
+  return _genAI
 }
 
 export const SYSTEM_PROMPT = `Ты — операционный ИИ-агент заведения общепита (кальянный бар).
@@ -62,25 +62,17 @@ export async function askAgent(
   userMessage: string,
   context?: string
 ): Promise<string> {
-  const messages: Anthropic.MessageParam[] = []
-
-  if (context) {
-    messages.push({
-      role: 'user',
-      content: `Контекст из системы:\n${context}\n\nЗапрос: ${userMessage}`,
-    })
-  } else {
-    messages.push({ role: 'user', content: userMessage })
-  }
-
-  const response = await getClient().messages.create({
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 1024,
-    system: SYSTEM_PROMPT,
-    messages,
+  const model = getClient().getGenerativeModel({
+    model: 'gemini-1.5-flash',
+    systemInstruction: SYSTEM_PROMPT,
   })
 
-  return response.content[0].type === 'text' ? response.content[0].text : ''
+  const prompt = context
+    ? `Контекст из системы:\n${context}\n\nЗапрос: ${userMessage}`
+    : userMessage
+
+  const result = await model.generateContent(prompt)
+  return result.response.text()
 }
 
 export async function generateShiftReport(data: {
