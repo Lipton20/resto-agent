@@ -37,18 +37,29 @@ export async function POST(req: NextRequest) {
 
     // Команды
     if (text === '/start' || text === '/старт') {
-      await sendMessage(
-        chatId,
-        `👋 <b>Привет! Я RestoAgent — умный помощник заведения.</b>\n\n` +
-        `Что я умею:\n` +
-        `📅 /бронь — забронировать столик\n` +
-        `📋 /брони — список броней на сегодня\n` +
-        `📦 /склад — остатки на складе\n` +
-        `👥 /смена — кто работает сегодня\n` +
-        `📊 /abc — ABC-анализ меню\n` +
-        `❓ /помощь — спросить агента\n\n` +
-        (isManager(userId) ? '🔑 <b>У вас есть права менеджера</b>' : '')
-      )
+      if (isManager(userId)) {
+        await sendMessage(
+          chatId,
+          `👋 <b>Привет! Я RestoAgent — управление заведением.</b>\n\n` +
+          `🔑 <b>Панель менеджера:</b>\n` +
+          `📦 /склад — остатки на складе\n` +
+          `👥 /смена — кто работает сегодня\n` +
+          `📊 /abc — ABC-анализ меню\n` +
+          `📋 /брони — все брони на сегодня\n\n` +
+          `👤 <b>Гостевые функции:</b>\n` +
+          `📅 /бронь — забронировать столик\n` +
+          `❓ /помощь — задать вопрос`
+        )
+      } else {
+        await sendMessage(
+          chatId,
+          `👋 <b>Привет! Добро пожаловать в наш кальянный бар.</b>\n\n` +
+          `Что я умею:\n` +
+          `📅 /бронь — забронировать столик\n` +
+          `📋 /брони — ваши брони на сегодня\n` +
+          `❓ /помощь — задать вопрос`
+        )
+      }
       return NextResponse.json({ ok: true })
     }
 
@@ -84,6 +95,10 @@ export async function POST(req: NextRequest) {
     }
 
     if (text === '/склад' || text === '/inventory') {
+      if (!isManager(userId)) {
+        await sendMessage(chatId, '🔒 Эта команда доступна только менеджерам.')
+        return NextResponse.json({ ok: true })
+      }
       const { data: items } = await supabaseAdmin
         .from('inventory')
         .select('*')
@@ -111,6 +126,10 @@ export async function POST(req: NextRequest) {
     }
 
     if (text === '/смена' || text === '/shift') {
+      if (!isManager(userId)) {
+        await sendMessage(chatId, '🔒 Эта команда доступна только менеджерам.')
+        return NextResponse.json({ ok: true })
+      }
       const { data: staff } = await supabaseAdmin
         .from('current_shift_staff')
         .select('*')
@@ -138,6 +157,10 @@ export async function POST(req: NextRequest) {
     }
 
     if (text === '/abc') {
+      if (!isManager(userId)) {
+        await sendMessage(chatId, '🔒 Эта команда доступна только менеджерам.')
+        return NextResponse.json({ ok: true })
+      }
       const { data: abcData } = await supabaseAdmin.rpc('get_abc_analysis')
 
       if (!abcData || abcData.length === 0) {
