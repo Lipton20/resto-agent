@@ -26,8 +26,8 @@ export default function StaffPage() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ staff_id: '', date: new Date().toISOString().split('T')[0], start_time: '12:00', end_time: '00:00' })
 
-  const load = async () => {
-    setLoading(true)
+  const load = async (showLoader = false) => {
+    if (showLoader) setLoading(true)
     const [shiftsRes, staffRes] = await Promise.all([
       fetch(`/api/staff?date=${date}`),
       fetch('/api/staff?type=staff'),
@@ -37,15 +37,15 @@ export default function StaffPage() {
     setLoading(false)
   }
 
-  useEffect(() => { load() }, [date])
+  useEffect(() => { load(shifts.length === 0) }, [date])
 
   const handleCheckin = async (id: string) => {
+    setShifts(prev => prev.map(s => s.id === id ? { ...s, status: 'active', checked_in_at: new Date().toISOString() } : s))
     await fetch('/api/staff', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, type: 'checkin' }),
     })
-    load()
   }
 
   const handleAddShift = async (e: React.FormEvent) => {
@@ -56,7 +56,7 @@ export default function StaffPage() {
       body: JSON.stringify(form),
     })
     setShowForm(false)
-    load()
+    load(false)
   }
 
   return (
@@ -116,10 +116,11 @@ export default function StaffPage() {
         <input type="date" value={date} onChange={e => setDate(e.target.value)}
           className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
         <span className="text-sm text-gray-400">{format(new Date(date + 'T00:00:00'), 'EEEE, d MMMM', { locale: ru })}</span>
+        {loading && <span className="text-xs text-indigo-400 animate-pulse">Обновление...</span>}
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        {loading ? (
+        {loading && shifts.length === 0 ? (
           <div className="p-8 text-center text-gray-400">Загрузка...</div>
         ) : shifts.length === 0 ? (
           <div className="p-8 text-center text-gray-400">Смен на эту дату нет</div>
