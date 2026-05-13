@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import { sendMessage, notifyManagement } from '@/lib/telegram'
+import { sendMessage, notifyManagement, MANAGER_KEYBOARD, GUEST_KEYBOARD } from '@/lib/telegram'
 import { askAgent } from '@/lib/claude'
 import {
   getSession,
@@ -24,7 +24,18 @@ export async function POST(req: NextRequest) {
 
     const chatId = message.chat.id
     const userId = message.from.id
-    const text = (message.text || '').trim()
+    const rawText = (message.text || '').trim()
+    // Маппинг кнопок на команды
+    const buttonMap: Record<string, string> = {
+      '📦 Склад': '/склад',
+      '👥 Смена': '/смена',
+      '📊 ABC-анализ': '/abc',
+      '📋 Брони': '/брони',
+      '📋 Мои брони': '/брони',
+      '📅 Забронировать': '/бронь',
+      '❓ Помощь': '/помощь',
+    }
+    const text = buttonMap[rawText] || rawText
 
     if (!text) return NextResponse.json({ ok: true })
 
@@ -40,24 +51,16 @@ export async function POST(req: NextRequest) {
       if (isManager(userId)) {
         await sendMessage(
           chatId,
-          `👋 <b>Привет! Я RestoAgent — управление заведением.</b>\n\n` +
-          `🔑 <b>Панель менеджера:</b>\n` +
-          `📦 /склад — остатки на складе\n` +
-          `👥 /смена — кто работает сегодня\n` +
-          `📊 /abc — ABC-анализ меню\n` +
-          `📋 /брони — все брони на сегодня\n\n` +
-          `👤 <b>Гостевые функции:</b>\n` +
-          `📅 /бронь — забронировать столик\n` +
-          `❓ /помощь — задать вопрос`
+          `👋 <b>Привет! Я RestoAgent — управление заведением.</b>\n\nВыберите действие из меню ниже:`,
+          'HTML',
+          MANAGER_KEYBOARD
         )
       } else {
         await sendMessage(
           chatId,
-          `👋 <b>Привет! Добро пожаловать в наш кальянный бар.</b>\n\n` +
-          `Что я умею:\n` +
-          `📅 /бронь — забронировать столик\n` +
-          `📋 /брони — ваши брони на сегодня\n` +
-          `❓ /помощь — задать вопрос`
+          `👋 <b>Привет! Добро пожаловать в наш кальянный бар.</b>\n\nВыберите действие из меню ниже:`,
+          'HTML',
+          GUEST_KEYBOARD
         )
       }
       return NextResponse.json({ ok: true })

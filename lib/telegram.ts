@@ -1,6 +1,17 @@
 const TELEGRAM_API = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}`
 
-export async function sendMessage(chatId: number | string, text: string, parseMode: 'HTML' | 'Markdown' = 'HTML') {
+type ReplyKeyboard = {
+  keyboard: string[][]
+  resize_keyboard: boolean
+  persistent?: boolean
+}
+
+export async function sendMessage(
+  chatId: number | string,
+  text: string,
+  parseMode: 'HTML' | 'Markdown' = 'HTML',
+  replyMarkup?: ReplyKeyboard
+) {
   const res = await fetch(`${TELEGRAM_API}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -8,9 +19,29 @@ export async function sendMessage(chatId: number | string, text: string, parseMo
       chat_id: chatId,
       text,
       parse_mode: parseMode,
+      reply_markup: replyMarkup,
     }),
   })
   return res.json()
+}
+
+export const MANAGER_KEYBOARD: ReplyKeyboard = {
+  keyboard: [
+    ['📦 Склад', '👥 Смена'],
+    ['📊 ABC-анализ', '📋 Брони'],
+    ['📅 Забронировать', '❓ Помощь'],
+  ],
+  resize_keyboard: true,
+  persistent: true,
+}
+
+export const GUEST_KEYBOARD: ReplyKeyboard = {
+  keyboard: [
+    ['📅 Забронировать'],
+    ['📋 Мои брони', '❓ Помощь'],
+  ],
+  resize_keyboard: true,
+  persistent: true,
 }
 
 export async function notifyManagement(message: string) {
