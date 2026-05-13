@@ -15,7 +15,6 @@ export default function InventoryPage() {
   const [loading, setLoading] = useState(true)
   const [editId, setEditId] = useState<string | null>(null)
   const [delta, setDelta] = useState('')
-  const [reason, setReason] = useState<'delivery' | 'waste' | 'manual_adjustment'>('delivery')
 
   const load = async () => {
     setLoading(true)
@@ -26,17 +25,21 @@ export default function InventoryPage() {
 
   useEffect(() => { load() }, [])
 
-  const handleUpdate = async (id: string) => {
-    const amount = parseFloat(delta)
-    if (isNaN(amount)) return
+  const handleUpdate = async (id: string, currentStock: number) => {
+    const newStock = parseFloat(delta)
+    if (isNaN(newStock) || newStock < 0) return
+    const changeAmount = newStock - currentStock
+
+    // Обновляем локально сразу — без ожидания сервера
+    setItems(prev => prev.map(i => i.id === id ? { ...i, current_stock: newStock } : i))
+    setEditId(null)
+    setDelta('')
+
     await fetch('/api/inventory', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, change_amount: amount, reason }),
+      body: JSON.stringify({ id, change_amount: changeAmount, reason: 'manual_adjustment' }),
     })
-    setEditId(null)
-    setDelta('')
-    load()
   }
 
   const byCategory = items.reduce<Record<string, InventoryItem[]>>((acc, item) => {
@@ -99,23 +102,16 @@ export default function InventoryPage() {
                     <td className="px-4 py-3">
                       {isEditing ? (
                         <div className="flex items-center gap-2">
-                          <select
-                            value={reason}
-                            onChange={e => setReason(e.target.value as typeof reason)}
-                            className="border border-gray-200 rounded px-2 py-1 text-xs"
-                          >
-                            <option value="delivery">Поставка</option>
-                            <option value="waste">Списание</option>
-                            <option value="manual_adjustment">Корр.</option>
-                          </select>
                           <input
                             type="number"
                             value={delta}
                             onChange={e => setDelta(e.target.value)}
-                            placeholder="±кол-во"
-                            className="border border-gray-200 rounded px-2 py-1 text-xs w-20"
+                            placeholder={String(item.current_stock)}
+                            className="border border-gray-200 rounded px-2 py-1 text-xs w-24"
+                            autoFocus
+                            min="0"
                           />
-                          <button onClick={() => handleUpdate(item.id)} className="text-xs text-indigo-600 font-medium">OK</button>
+                          <button onClick={() => handleUpdate(item.id, item.current_stock)} className="text-xs bg-indigo-600 text-white px-2 py-1 rounded font-medium">OK</button>
                           <button onClick={() => setEditId(null)} className="text-xs text-gray-400">✕</button>
                         </div>
                       ) : (
